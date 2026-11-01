@@ -1,0 +1,264 @@
+{
+  "id": "flashvsr-plus",
+  "revision": 0,
+  "last_node_id": 7,
+  "last_link_id": 6,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VHS_LoadVideo",
+      "pos": [-1320, -180],
+      "size": [320, 491],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        { "label": "批次管理", "name": "meta_batch", "shape": 7, "type": "VHS_BatchManager", "link": null },
+        { "label": "vae", "name": "vae", "shape": 7, "type": "VAE", "link": null },
+        { "label": "视频", "name": "video", "type": "COMBO", "widget": { "name": "video" }, "link": null },
+        { "label": "强制帧率", "name": "force_rate", "type": "FLOAT", "widget": { "name": "force_rate" }, "link": null },
+        { "label": "自定义宽度", "name": "custom_width", "type": "INT", "widget": { "name": "custom_width" }, "link": null },
+        { "label": "自定义高度", "name": "custom_height", "type": "INT", "widget": { "name": "custom_height" }, "link": null },
+        { "label": "帧数读取上限", "name": "frame_load_cap", "type": "INT", "widget": { "name": "frame_load_cap" }, "link": null },
+        { "label": "跳过前X帧", "name": "skip_first_frames", "type": "INT", "widget": { "name": "skip_first_frames" }, "link": null },
+        { "label": "间隔", "name": "select_every_nth", "type": "INT", "widget": { "name": "select_every_nth" }, "link": null },
+        { "label": "格式", "name": "format", "shape": 7, "type": "COMBO", "widget": { "name": "format" }, "link": null }
+      ],
+      "outputs": [
+        { "label": "图像", "name": "IMAGE", "type": "IMAGE", "links": [1] },
+        { "label": "帧计数", "name": "frame_count", "type": "INT", "links": null },
+        { "label": "音频", "name": "audio", "type": "AUDIO", "links": [4] },
+        { "label": "视频信息", "name": "video_info", "type": "VHS_VIDEOINFO", "links": null }
+      ],
+      "title": "① 载入视频",
+      "properties": { "cnr_id": "comfyui-videohelpersuite", "Node name for S&R": "VHS_LoadVideo" },
+      "widgets_values": {
+        "video": "t960.mp4",
+        "force_rate": 0,
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "format": "AnimateDiff",
+        "choose video to upload": "image"
+      },
+      "widgets_values_named": {
+        "video": "t960.mp4",
+        "force_rate": 0,
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "format": "AnimateDiff",
+        "choose video to upload": "image"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 2,
+      "type": "FlashVSR_SM_Model",
+      "pos": [-900, 400],
+      "size": [360, 220],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{ "label": "FVSRN_MODEL", "name": "FVSRN_MODEL", "type": "FVSRN_MODEL", "links": [5] }],
+      "title": "② 主模型（FlashVSR+ turbo）",
+      "properties": { "cnr_id": "comfyui-flashvsr", "Node name for S&R": "FlashVSR_SM_Model" },
+      "widgets_values": [
+        "turbo_dit_plus.safetensors",
+        "lq_proj_in_plus_turbo.safetensors",
+        "posi_prompt_plus.pth",
+        "plus_turbo"
+      ],
+      "widgets_values_named": {
+        "dit": "turbo_dit_plus.safetensors",
+        "lq_proj": "lq_proj_in_plus_turbo.safetensors",
+        "prompt_embed": "posi_prompt_plus.pth",
+        "version": "plus_turbo"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 3,
+      "type": "FlashVSR_SM_Vae",
+      "pos": [-900, 680],
+      "size": [360, 120],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{ "label": "FVSRN_VAE", "name": "FVSRN_VAE", "type": "FVSRN_VAE", "links": [6] }],
+      "title": "② VAE（plus 用 TCD 解码）",
+      "properties": { "cnr_id": "comfyui-flashvsr", "Node name for S&R": "FlashVSR_SM_Vae" },
+      "widgets_values": ["none", "TCDecoder_plus.ckpt"],
+      "widgets_values_named": { "vae": "none", "tcd_encoder": "TCDecoder_plus.ckpt" },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 4,
+      "type": "FlashVSR_SM_Sampler",
+      "pos": [-900, -180],
+      "size": [380, 340],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        { "label": "model", "name": "model", "type": "FVSRN_MODEL", "link": 5 },
+        { "label": "image", "name": "image", "type": "IMAGE", "link": 1 }
+      ],
+      "outputs": [{ "label": "LATENT", "name": "LATENT", "type": "LATENT", "links": [2] }],
+      "title": "③ 采样（LQ 尺寸 + 倍数）",
+      "properties": { "cnr_id": "comfyui-flashvsr", "Node name for S&R": "FlashVSR_SM_Sampler" },
+      "widgets_values": [512, 288, 0, "fixed", 4, 3.5, 11, 2.0, false, 0, false],
+      "widgets_values_named": {
+        "width": 512,
+        "height": 288,
+        "seed": 0,
+        "control_after_generate": "fixed",
+        "scale": 4,
+        "kv_ratio": 3.5,
+        "local_range": 11,
+        "sparse_ratio": 2.0,
+        "offload": false,
+        "chunk_q": 0,
+        "long_mode": false
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 5,
+      "type": "FlashVSR_SM_Decoder",
+      "pos": [-460, -180],
+      "size": [340, 260],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        { "label": "latent", "name": "latent", "type": "LATENT", "link": 2 },
+        { "label": "vae", "name": "vae", "type": "FVSRN_VAE", "link": 6 }
+      ],
+      "outputs": [{ "label": "IMAGE", "name": "IMAGE", "type": "IMAGE", "links": [3] }],
+      "title": "④ 解码",
+      "properties": { "cnr_id": "comfyui-flashvsr", "Node name for S&R": "FlashVSR_SM_Decoder" },
+      "widgets_values": [true, 64, 16, 64, 8, true, "wavelet"],
+      "widgets_values_named": {
+        "tiled": true,
+        "tile_size": 64,
+        "overlap": 16,
+        "temporal_size": 64,
+        "temporal_overlap": 8,
+        "color_fix": true,
+        "fix_method": "wavelet"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 6,
+      "type": "VHS_VideoCombine",
+      "pos": [-80, -180],
+      "size": [400, 559],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        { "label": "图像", "name": "images", "type": "IMAGE", "link": 3 },
+        { "label": "音频", "name": "audio", "shape": 7, "type": "AUDIO", "link": 4 },
+        { "label": "批次管理", "name": "meta_batch", "shape": 7, "type": "VHS_BatchManager", "link": null },
+        { "label": "vae", "name": "vae", "shape": 7, "type": "VAE", "link": null },
+        { "label": "帧率", "name": "frame_rate", "type": "FLOAT", "widget": { "name": "frame_rate" }, "link": null },
+        { "label": "循环次数", "name": "loop_count", "type": "INT", "widget": { "name": "loop_count" }, "link": null },
+        { "label": "文件名前缀", "name": "filename_prefix", "type": "STRING", "widget": { "name": "filename_prefix" }, "link": null },
+        { "label": "格式", "name": "format", "type": "COMBO", "widget": { "name": "format" }, "link": null },
+        { "label": "Ping-Pong", "name": "pingpong", "type": "BOOLEAN", "widget": { "name": "pingpong" }, "link": null },
+        { "label": "保存到输出文件夹", "name": "save_output", "type": "BOOLEAN", "widget": { "name": "save_output" }, "link": null },
+        { "label": "保存元数据", "name": "save_metadata", "type": "BOOLEAN", "widget": { "name": "save_metadata" }, "link": null },
+        { "label": "修剪音频", "name": "trim_to_audio", "type": "BOOLEAN", "widget": { "name": "trim_to_audio" }, "link": null }
+      ],
+      "outputs": [{ "label": "文件名", "name": "Filenames", "type": "VHS_FILENAMES", "links": null }],
+      "title": "⑤ 保存（原音轨保留）",
+      "properties": { "cnr_id": "comfyui-videohelpersuite", "Node name for S&R": "VHS_VideoCombine" },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "FlashVSR",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      },
+      "widgets_values_named": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "FlashVSR",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "pos": [-900, 840],
+      "size": [880, 400],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "说明：FlashVSR+ 视频超分",
+      "properties": {},
+      "widgets_values": [
+        "## FlashVSR+ 视频超分（A10 实测）\n\n**核心：`width`/`height` 填「低清输入」的尺寸，`scale` 是放大倍数。**\n实际输出 = width×scale 向下取整到 128 的倍数，再居中裁剪。\n\n**16:9 的正确组合（重要）**\n- `512×288` + `scale 4` → **2048×1152**（真正的 16:9，无裁剪）\n- `480×270` + `scale 4` → 1920×1024（上下各裁 28 像素，画面比例会变）\n\n尺寸必须让 `width×scale` 和 `height×scale` 都是 128 的倍数，否则会裁边。\n\n**实测性能（A10 / plus turbo）**\n- 2048×1152，48 帧：**54 秒**（采样 26s + 解码 15s + 加载 6s）\n- 约 1.1 秒/帧，比 SeedVR2 7B 的 4 秒/帧快约 4 倍\n\n**依赖**\n必须装 `block_sparse_attn`，否则会退化成稠密 mask 直接爆显存。\n已编译安装在本环境（CUDA 13 / torch 2.13 / py3.12 / sm86）。\n\n**OOM 时**\n先降 `width/height`（比如 384×216），不要动 scale。\n\n**长视频**\n用 `FlashVSR_SM_VideoTrimLoop` 节点切段，或开 `long_mode`（必须配 TCD 解码）。\n"
+      ],
+      "widgets_values_named": {
+        "text": "## FlashVSR+ 视频超分（A10 实测）\n\n**核心：`width`/`height` 填「低清输入」的尺寸，`scale` 是放大倍数。**\n实际输出 = width×scale 向下取整到 128 的倍数，再居中裁剪。\n\n**16:9 的正确组合（重要）**\n- `512×288` + `scale 4` → **2048×1152**（真正的 16:9，无裁剪）\n- `480×270` + `scale 4` → 1920×1024（上下各裁 28 像素，画面比例会变）\n\n尺寸必须让 `width×scale` 和 `height×scale` 都是 128 的倍数，否则会裁边。\n\n**实测性能（A10 / plus turbo）**\n- 2048×1152，48 帧：**54 秒**（采样 26s + 解码 15s + 加载 6s）\n- 约 1.1 秒/帧，比 SeedVR2 7B 的 4 秒/帧快约 4 倍\n\n**依赖**\n必须装 `block_sparse_attn`，否则会退化成稠密 mask 直接爆显存。\n已编译安装在本环境（CUDA 13 / torch 2.13 / py3.12 / sm86）。\n\n**OOM 时**\n先降 `width/height`（比如 384×216），不要动 scale。\n\n**长视频**\n用 `FlashVSR_SM_VideoTrimLoop` 节点切段，或开 `long_mode`（必须配 TCD 解码）。\n"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    }
+  ],
+  "links": [
+    [1, 1, 0, 4, 1, "IMAGE"],
+    [2, 4, 0, 5, 0, "LATENT"],
+    [3, 5, 0, 6, 0, "IMAGE"],
+    [4, 1, 2, 6, 1, "AUDIO"],
+    [5, 2, 0, 4, 0, "FVSRN_MODEL"],
+    [6, 3, 0, 5, 1, "FVSRN_VAE"]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "FlashVSR+ 超分",
+      "bounding": [-940, -220, 1290, 1500],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": { "scale": 0.6, "offset": [1500, 400] },
+    "frontendVersion": "1.57.1",
+    "VHS_latentpreview": false,
+    "VHS_MetadataImage": true
+  },
+  "version": 0.4,
+  "seed_widgets": {}
+}

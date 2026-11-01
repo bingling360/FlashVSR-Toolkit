@@ -1,0 +1,246 @@
+{
+  "id": "gmfss-vfi-only",
+  "revision": 0,
+  "last_node_id": 7,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VHS_LoadVideo",
+      "pos": [-1180, -180],
+      "size": [320, 491],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        { "label": "批次管理", "name": "meta_batch", "shape": 7, "type": "VHS_BatchManager", "link": null },
+        { "label": "vae", "name": "vae", "shape": 7, "type": "VAE", "link": null },
+        { "label": "视频", "name": "video", "type": "COMBO", "widget": { "name": "video" }, "link": null },
+        { "label": "强制帧率", "name": "force_rate", "type": "FLOAT", "widget": { "name": "force_rate" }, "link": null },
+        { "label": "自定义宽度", "name": "custom_width", "type": "INT", "widget": { "name": "custom_width" }, "link": null },
+        { "label": "自定义高度", "name": "custom_height", "type": "INT", "widget": { "name": "custom_height" }, "link": null },
+        { "label": "帧数读取上限", "name": "frame_load_cap", "type": "INT", "widget": { "name": "frame_load_cap" }, "link": null },
+        { "label": "跳过前X帧", "name": "skip_first_frames", "type": "INT", "widget": { "name": "skip_first_frames" }, "link": null },
+        { "label": "间隔", "name": "select_every_nth", "type": "INT", "widget": { "name": "select_every_nth" }, "link": null },
+        { "label": "格式", "name": "format", "shape": 7, "type": "COMBO", "widget": { "name": "format" }, "link": null }
+      ],
+      "outputs": [
+        { "label": "图像", "name": "IMAGE", "type": "IMAGE", "links": [1] },
+        { "label": "帧计数", "name": "frame_count", "type": "INT", "links": null },
+        { "label": "音频", "name": "audio", "type": "AUDIO", "links": [2] },
+        { "label": "视频信息", "name": "video_info", "type": "VHS_VIDEOINFO", "links": null }
+      ],
+      "title": "① 载入要补帧的视频",
+      "properties": { "cnr_id": "comfyui-videohelpersuite", "Node name for S&R": "VHS_LoadVideo" },
+      "widgets_values": {
+        "video": "test24.mp4",
+        "force_rate": 0,
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "format": "AnimateDiff",
+        "choose video to upload": "image"
+      },
+      "widgets_values_named": {
+        "video": "test24.mp4",
+        "force_rate": 0,
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "format": "AnimateDiff",
+        "choose video to upload": "image"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 2,
+      "type": "PrimitiveFloat",
+      "pos": [-780, 420],
+      "size": [240, 60],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{ "label": "FLOAT", "name": "FLOAT", "type": "FLOAT", "links": [4] }],
+      "title": "源视频帧率（按原片填）",
+      "properties": { "cnr_id": "comfy-core", "Node name for S&R": "PrimitiveFloat" },
+      "widgets_values": [24],
+      "widgets_values_named": { "value": 24 },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 3,
+      "type": "PrimitiveInt",
+      "pos": [-780, 260],
+      "size": [240, 82],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{ "label": "INT", "name": "INT", "type": "INT", "links": [3, 5] }],
+      "title": "补帧倍数（只改这里）",
+      "properties": { "cnr_id": "comfy-core", "Node name for S&R": "PrimitiveInt" },
+      "widgets_values": [2, "fixed"],
+      "widgets_values_named": { "value": 2, "control_after_generate": "fixed" },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 4,
+      "type": "ComfyMathExpression",
+      "pos": [-490, 280],
+      "size": [370, 148],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        { "label": "values.a", "name": "values.a", "type": "FLOAT,INT,BOOLEAN", "link": 4 },
+        { "name": "values.b", "shape": 7, "type": "FLOAT,INT,BOOLEAN", "link": 5 },
+        { "name": "values.c", "shape": 7, "type": "FLOAT,INT,BOOLEAN", "link": null },
+        { "label": "expression", "name": "expression", "type": "STRING", "widget": { "name": "expression" }, "link": null }
+      ],
+      "outputs": [
+        { "label": "FLOAT", "name": "FLOAT", "type": "FLOAT", "links": [6] },
+        { "label": "INT", "name": "INT", "type": "INT", "links": [] },
+        { "label": "BOOL", "name": "BOOL", "type": "BOOLEAN", "links": [] }
+      ],
+      "title": "输出帧率 = 源帧率 × 倍数",
+      "properties": { "cnr_id": "comfy-core", "Node name for S&R": "ComfyMathExpression" },
+      "widgets_values": ["a * b"],
+      "widgets_values_named": { "expression": "a * b" },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 5,
+      "type": "GMFSS Fortuna VFI",
+      "pos": [-800, -180],
+      "size": [340, 130],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        { "label": "frames", "name": "frames", "type": "IMAGE", "link": 1 },
+        { "label": "multiplier", "name": "multiplier", "type": "INT", "widget": { "name": "multiplier" }, "link": 3 },
+        { "name": "optional_interpolation_states", "shape": 7, "type": "INTERPOLATION_STATES", "link": null }
+      ],
+      "outputs": [{ "label": "IMAGE", "name": "IMAGE", "type": "IMAGE", "links": [7] }],
+      "title": "② GMFSS 补帧",
+      "properties": { "cnr_id": "comfyui-frame-interpolation", "Node name for S&R": "GMFSS Fortuna VFI" },
+      "widgets_values": ["GMFSS_fortuna", 10, 2],
+      "widgets_values_named": {
+        "ckpt_name": "GMFSS_fortuna",
+        "clear_cache_after_n_frames": 10,
+        "multiplier": 2
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 6,
+      "type": "VHS_VideoCombine",
+      "pos": [-400, -180],
+      "size": [400, 559],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        { "label": "图像", "name": "images", "type": "IMAGE", "link": 7 },
+        { "label": "音频", "name": "audio", "shape": 7, "type": "AUDIO", "link": 2 },
+        { "label": "批次管理", "name": "meta_batch", "shape": 7, "type": "VHS_BatchManager", "link": null },
+        { "label": "vae", "name": "vae", "shape": 7, "type": "VAE", "link": null },
+        { "label": "帧率", "name": "frame_rate", "type": "FLOAT", "widget": { "name": "frame_rate" }, "link": 6 },
+        { "label": "循环次数", "name": "loop_count", "type": "INT", "widget": { "name": "loop_count" }, "link": null },
+        { "label": "文件名前缀", "name": "filename_prefix", "type": "STRING", "widget": { "name": "filename_prefix" }, "link": null },
+        { "label": "格式", "name": "format", "type": "COMBO", "widget": { "name": "format" }, "link": null },
+        { "label": "Ping-Pong", "name": "pingpong", "type": "BOOLEAN", "widget": { "name": "pingpong" }, "link": null },
+        { "label": "保存到输出文件夹", "name": "save_output", "type": "BOOLEAN", "widget": { "name": "save_output" }, "link": null },
+        { "label": "保存元数据", "name": "save_metadata", "type": "BOOLEAN", "widget": { "name": "save_metadata" }, "link": null },
+        { "label": "修剪音频", "name": "trim_to_audio", "type": "BOOLEAN", "widget": { "name": "trim_to_audio" }, "link": null }
+      ],
+      "outputs": [{ "label": "文件名", "name": "Filenames", "type": "VHS_FILENAMES", "links": null }],
+      "title": "③ 保存（原音轨保留）",
+      "properties": { "cnr_id": "comfyui-videohelpersuite", "Node name for S&R": "VHS_VideoCombine" },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "补帧",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      },
+      "widgets_values_named": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "补帧",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "pos": [-800, 520],
+      "size": [780, 330],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "说明：GMFSS 补帧",
+      "properties": {},
+      "widgets_values": [
+        "## GMFSS 补帧（只补帧，不超分）\n\n**用法**\n1. ① 选视频（文件放 `ComfyUI/input/`）\n2. 「源视频帧率」填原片帧率，24fps 就填 24\n3. 「补帧倍数」改这里，2 = 24→48fps\n4. 执行 → `ComfyUI/output/补帧_00001.mp4`\n\n**模型**\n默认 `GMFSS_fortuna`（标准版，细节保留最好）。\n`GMFSS_fortuna_union` 不可用——依赖的 rife46.pth 已被官方删除。\n想快就换成 `rife49.pth`，快 5-10 倍但细节差一些。\n\n**速度参考（A10）**\n1344×768 约 0.1 秒/帧，15 秒片子（360 帧）约 1 分钟。\n\n**注意**\n- 帧率由公式节点自动算，改成 `a * b` 之外的写法会让视频变慢动作\n- 跨镜头素材会糊，需要先用 `Make Interpolation State List` 标切点\n"
+      ],
+      "widgets_values_named": {
+        "text": "## GMFSS 补帧（只补帧，不超分）\n\n**用法**\n1. ① 选视频（文件放 `ComfyUI/input/`）\n2. 「源视频帧率」填原片帧率，24fps 就填 24\n3. 「补帧倍数」改这里，2 = 24→48fps\n4. 执行 → `ComfyUI/output/补帧_00001.mp4`\n\n**模型**\n默认 `GMFSS_fortuna`（标准版，细节保留最好）。\n`GMFSS_fortuna_union` 不可用——依赖的 rife46.pth 已被官方删除。\n想快就换成 `rife49.pth`，快 5-10 倍但细节差一些。\n\n**速度参考（A10）**\n1344×768 约 0.1 秒/帧，15 秒片子（360 帧）约 1 分钟。\n\n**注意**\n- 帧率由公式节点自动算，改成 `a * b` 之外的写法会让视频变慢动作\n- 跨镜头素材会糊，需要先用 `Make Interpolation State List` 标切点\n"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    }
+  ],
+  "links": [
+    [1, 1, 0, 5, 0, "IMAGE"],
+    [2, 1, 2, 6, 1, "AUDIO"],
+    [3, 3, 0, 5, 1, "INT"],
+    [4, 2, 0, 4, 0, "FLOAT"],
+    [5, 3, 0, 4, 1, "INT"],
+    [6, 4, 0, 6, 4, "FLOAT"],
+    [7, 5, 0, 6, 0, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "GMFSS 补帧",
+      "bounding": [-820, -220, 860, 1100],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": { "scale": 0.75, "offset": [1300, 300] },
+    "frontendVersion": "1.57.1",
+    "VHS_latentpreview": false,
+    "VHS_MetadataImage": true
+  },
+  "version": 0.4,
+  "seed_widgets": {}
+}

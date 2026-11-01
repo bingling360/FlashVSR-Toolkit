@@ -21,6 +21,7 @@ FlashVSR Stream Save
 """
 
 import os
+import gc
 import shutil
 import subprocess
 import tempfile
@@ -28,6 +29,29 @@ import time
 
 import numpy as np
 import torch
+
+
+def purge_memory():
+    """卸载所有模型 + 清空显存缓存 + 回收内存。
+
+    等价于 ComfyUI 的 /free 接口做的事：
+      unload_all_models() -> soft_empty_cache() -> gc.collect()
+    """
+    freed = []
+    try:
+        import comfy.model_management as mm
+        before = torch.cuda.memory_reserved() / 1073741824 if torch.cuda.is_available() else 0
+        mm.unload_all_models()
+        mm.soft_empty_cache()
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+            torch.cuda.empty_cache()
+            after = torch.cuda.memory_reserved() / 1073741824
+            freed.append(f"显存 {before:.2f}→{after:.2f} GB")
+    except Exception as e:
+        print(f"[MemoryPurge] 失败：{type(e).__name__}: {e}")
+    print(f"[MemoryPurge] 已释放 {' / '.join(freed) if freed else '（无 CUDA）'}")
 
 try:
     import imageio.v2 as imageio
@@ -226,6 +250,11 @@ class FlashVSRStreamSave:
             },
             "optional": {
                 "audio": ("AUDIO", {"tooltip": "可选：接上则混流保留音轨"}),
+                "unload_after": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "写完后卸载模型并清空显存缓存。\n"
+                               "接补帧等后续阶段时建议保持开启，避免显存残留。",
+                }),
             },
         }
 
@@ -241,7 +270,8 @@ class FlashVSRStreamSave:
         return d
 
     def execute(self, latent, vae, filename_prefix, fps, crf,
-                color_fix, fix_method, segment_latent_frames, audio=None):
+                color_fix, fix_method, segment_latent_frames,
+                audio=None, unload_after=True):
         if not isinstance(vae, dict) or vae.get("kind") != "tcd":
             raise ValueError("本节点仅支持 TCD 解码器（FlashVSR_SM_Vae 选 TCDecoder）")
 
@@ -330,7 +360,25 @@ class FlashVSRStreamSave:
             os.replace(tmp_path, final_path)
 
         print(f"[FlashVSR-Stream] 完成：{written} 帧 -> {final_path}")
-        return (final_path,)
+
+        # 卸载模型 + 清显存，给后续阶段（如补帧）腾地方
+        if unload_after:
+            purge_memory()
+
+        # 给界面可见的输出：文本显示路径 + 视频预览
+        rel = os.path.basename(final_path)
+        return {
+            "ui": {
+                "text": [f"已保存 {written} 帧\n{final_path}"],
+                "gifs": [{
+                    "filename": rel,
+                    "subfolder": "",
+                    "type": "output",
+                    "format": "video/h264-mp4",
+                }],
+            },
+            "result": (final_path,),
+        }
 
     # ---- 单段后处理：[-1,1] → color fix → uint8 ----
     @staticmethod
@@ -365,5 +413,37 @@ class FlashVSRStreamSave:
         return u8.permute(1, 2, 3, 0).contiguous().cpu().numpy()  # [f,h,w,3]
 
 
-NODE_CLASS_MAPPINGS = {"FlashVSRStreamSave": FlashVSRStreamSave}
-NODE_DISPLAY_NAME_MAPPINGS = {"FlashVSRStreamSave": "FlashVSR 流式解码落盘"}
+class MemoryPurge:
+    """独立的内存/显存清理节点，透传任意输入。
+
+    放在两个重负载阶段之间（例如超分 → 补帧），确保前一个阶段的模型和缓存
+    完全释放后再加载下一个。ComfyUI 核心没有这个节点，这里补上。
+    """
+
+    CATEGORY = "FlashVSR"
+    FUNCTION = "run"
+    RETURN_TYPES = ("*",)
+    RETURN_NAMES = ("output",)
+    OUTPUT_NODE = False
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "value": ("*", {"tooltip": "任意类型的输入，原样传出"}),
+            },
+        }
+
+    def run(self, value):
+        purge_memory()
+        return (value,)
+
+
+NODE_CLASS_MAPPINGS = {
+    "FlashVSRStreamSave": FlashVSRStreamSave,
+    "MemoryPurge": MemoryPurge,
+}
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "FlashVSRStreamSave": "FlashVSR 流式解码落盘",
+    "MemoryPurge": "释放显存/内存",
+}

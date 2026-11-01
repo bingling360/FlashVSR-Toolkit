@@ -1,0 +1,838 @@
+{
+  "id": "upscale-then-interp",
+  "revision": 0,
+  "last_node_id": 9,
+  "last_link_id": 9,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VHS_LoadVideo",
+      "pos": [
+        -1620,
+        -180
+      ],
+      "size": [
+        320,
+        491
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "批次管理",
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "label": "视频",
+          "name": "video",
+          "type": "COMBO",
+          "widget": {
+            "name": "video"
+          },
+          "link": null
+        },
+        {
+          "label": "强制帧率",
+          "name": "force_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "force_rate"
+          },
+          "link": null
+        },
+        {
+          "label": "自定义宽度",
+          "name": "custom_width",
+          "type": "INT",
+          "widget": {
+            "name": "custom_width"
+          },
+          "link": null
+        },
+        {
+          "label": "自定义高度",
+          "name": "custom_height",
+          "type": "INT",
+          "widget": {
+            "name": "custom_height"
+          },
+          "link": null
+        },
+        {
+          "label": "帧数读取上限",
+          "name": "frame_load_cap",
+          "type": "INT",
+          "widget": {
+            "name": "frame_load_cap"
+          },
+          "link": null
+        },
+        {
+          "label": "跳过前X帧",
+          "name": "skip_first_frames",
+          "type": "INT",
+          "widget": {
+            "name": "skip_first_frames"
+          },
+          "link": null
+        },
+        {
+          "label": "间隔",
+          "name": "select_every_nth",
+          "type": "INT",
+          "widget": {
+            "name": "select_every_nth"
+          },
+          "link": null
+        },
+        {
+          "label": "格式",
+          "name": "format",
+          "shape": 7,
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "图像",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ]
+        },
+        {
+          "label": "帧计数",
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "label": "音频",
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            5
+          ]
+        },
+        {
+          "label": "视频信息",
+          "name": "video_info",
+          "type": "VHS_VIDEOINFO",
+          "links": null
+        }
+      ],
+      "title": "① 载入源视频",
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "Node name for S&R": "VHS_LoadVideo"
+      },
+      "widgets_values": {
+        "video": "t960.mp4",
+        "force_rate": 0,
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "format": "AnimateDiff",
+        "choose video to upload": "image"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 2,
+      "type": "FlashVSR_SM_Model",
+      "pos": [
+        -1200,
+        400
+      ],
+      "size": [
+        360,
+        220
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "FVSRN_MODEL",
+          "name": "model",
+          "type": "FVSRN_MODEL",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "title": "② 超分主模型",
+      "properties": {
+        "cnr_id": "comfyui-flashvsr",
+        "Node name for S&R": "FlashVSR_SM_Model"
+      },
+      "widgets_values": [
+        "turbo_dit_plus.safetensors",
+        "lq_proj_in_plus_turbo.safetensors",
+        "posi_prompt_plus.pth",
+        "plus_turbo"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 3,
+      "type": "FlashVSR_SM_Vae",
+      "pos": [
+        -1200,
+        680
+      ],
+      "size": [
+        360,
+        120
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "FVSRN_VAE",
+          "name": "vae",
+          "type": "FVSRN_VAE",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "title": "② 超分 VAE",
+      "properties": {
+        "cnr_id": "comfyui-flashvsr",
+        "Node name for S&R": "FlashVSR_SM_Vae"
+      },
+      "widgets_values": [
+        "none",
+        "TCDecoder_plus.ckpt"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 4,
+      "type": "FlashVSR_SM_Sampler",
+      "pos": [
+        -1200,
+        -180
+      ],
+      "size": [
+        380,
+        340
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "FVSRN_MODEL",
+          "link": 2
+        },
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LATENT",
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "title": "③ 超分采样",
+      "properties": {
+        "cnr_id": "comfyui-flashvsr",
+        "Node name for S&R": "FlashVSR_SM_Sampler"
+      },
+      "widgets_values": [
+        512,
+        288,
+        0,
+        "fixed",
+        4,
+        3.5,
+        11,
+        2.0,
+        true,
+        0,
+        false
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 5,
+      "type": "FlashVSRStreamSave",
+      "pos": [
+        -760,
+        -180
+      ],
+      "size": [
+        380,
+        340
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "latent",
+          "name": "latent",
+          "type": "LATENT",
+          "link": 4
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "FVSRN_VAE",
+          "link": 3
+        },
+        {
+          "label": "audio",
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "label": "video_path",
+          "name": "video_path",
+          "type": "STRING",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "title": "④ 流式落盘（完成后自动释放显存）",
+      "properties": {
+        "cnr_id": "comfyui-flashvsr-stream",
+        "Node name for S&R": "FlashVSRStreamSave"
+      },
+      "widgets_values": [
+        "超分",
+        24.0,
+        19,
+        true,
+        "wavelet",
+        4,
+        true
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 6,
+      "type": "VHS_LoadVideoPath",
+      "pos": [
+        -320,
+        -180
+      ],
+      "size": [
+        320,
+        420
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "video",
+          "name": "video",
+          "type": "STRING",
+          "widget": {
+            "name": "video"
+          },
+          "link": 6
+        },
+        {
+          "label": "批次管理",
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "label": "强制帧率",
+          "name": "force_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "force_rate"
+          },
+          "link": null
+        },
+        {
+          "label": "自定义宽度",
+          "name": "custom_width",
+          "type": "INT",
+          "widget": {
+            "name": "custom_width"
+          },
+          "link": null
+        },
+        {
+          "label": "自定义高度",
+          "name": "custom_height",
+          "type": "INT",
+          "widget": {
+            "name": "custom_height"
+          },
+          "link": null
+        },
+        {
+          "label": "帧数读取上限",
+          "name": "frame_load_cap",
+          "type": "INT",
+          "widget": {
+            "name": "frame_load_cap"
+          },
+          "link": null
+        },
+        {
+          "label": "跳过前X帧",
+          "name": "skip_first_frames",
+          "type": "INT",
+          "widget": {
+            "name": "skip_first_frames"
+          },
+          "link": null
+        },
+        {
+          "label": "间隔",
+          "name": "select_every_nth",
+          "type": "INT",
+          "widget": {
+            "name": "select_every_nth"
+          },
+          "link": null
+        },
+        {
+          "label": "格式",
+          "name": "format",
+          "shape": 7,
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "图像",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            7
+          ]
+        },
+        {
+          "label": "帧计数",
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "label": "音频",
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            9
+          ]
+        },
+        {
+          "label": "视频信息",
+          "name": "video_info",
+          "type": "VHS_VIDEOINFO",
+          "links": null
+        }
+      ],
+      "title": "⑤ 读回超分结果",
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "Node name for S&R": "VHS_LoadVideoPath"
+      },
+      "widgets_values": [
+        "",
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        "AnimateDiff"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 7,
+      "type": "GMFSS Fortuna VFI",
+      "pos": [
+        40,
+        -180
+      ],
+      "size": [
+        320,
+        160
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "frames",
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "title": "⑥ 补帧（2 倍）",
+      "properties": {
+        "cnr_id": "comfyui-frame-interpolation",
+        "Node name for S&R": "GMFSS Fortuna VFI"
+      },
+      "widgets_values": [
+        "GMFSS_fortuna_union",
+        10,
+        2
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 8,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        400,
+        -180
+      ],
+      "size": [
+        400,
+        559
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "图像",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        },
+        {
+          "label": "音频",
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 9
+        },
+        {
+          "label": "批次管理",
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "label": "帧率",
+          "name": "frame_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          },
+          "link": null
+        },
+        {
+          "label": "循环次数",
+          "name": "loop_count",
+          "type": "INT",
+          "widget": {
+            "name": "loop_count"
+          },
+          "link": null
+        },
+        {
+          "label": "文件名前缀",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "label": "格式",
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        },
+        {
+          "label": "Ping-Pong",
+          "name": "pingpong",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "pingpong"
+          },
+          "link": null
+        },
+        {
+          "label": "保存到输出文件夹",
+          "name": "save_output",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "save_output"
+          },
+          "link": null
+        },
+        {
+          "label": "保存元数据",
+          "name": "save_metadata",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "save_metadata"
+          },
+          "link": null
+        },
+        {
+          "label": "修剪音频",
+          "name": "trim_to_audio",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "trim_to_audio"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "文件名",
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "title": "⑦ 保存最终成品",
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 48,
+        "loop_count": 0,
+        "filename_prefix": "超分补帧",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 9,
+      "type": "MarkdownNote",
+      "pos": [
+        -1200,
+        840
+      ],
+      "size": [
+        900,
+        520
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "说明：超分 + 补帧 一体化",
+      "properties": {},
+      "widgets_values": [
+        "## 超分 + 补帧 一体化\n\n**流程**：源视频 → FlashVSR 超分（落盘）→ 读回 → GMFSS 补帧 → 保存\n\n### 为什么要落盘再读回\nFlashVSR 的输出是**视频文件**，不是内存里的张量。这样设计正是为了不爆内存——\n解码完一段就写盘，内存恒定。后续补帧需要 IMAGE 张量，所以用 `VHS_LoadVideoPath`\n把文件读回来。多一次无损读取，不影响画质。\n\n### 显存不会残留\n「流式落盘」节点的 `unload_after` 默认开启：写完视频立刻\n`unload_all_models()` + `soft_empty_cache()` + `gc.collect()`。\n所以补帧阶段从干净状态开始，不会和超分模型抢显存。\n\n### 关键参数\n- **保存节点 `frame_rate`**：必须填 **源帧率 × 补帧倍数**（源 24fps × 2 = 48）\n- **补帧 `multiplier`**：2 = 帧率翻倍\n\n---\n\n## ⚠️ 画质警告：width/height 不是输出尺寸\n\n`width/height` 是**送进模型前的低清尺寸**。节点会先把源片缩到这个尺寸，\n再双三次放大到目标，最后让模型修复。\n**缩得越狠，丢的真实信息越多，模型补的幻觉越多。**\n\n净放大倍数 = `4 × (LQ ÷ 源分辨率)`（LQ 就是 width/height）\n\n以源片 1376×768 为例：\n\n| 用途 | LQ | scale | 输出 | 降采样 | 评价 |\n|---|---|---|---|---|---|\n| 纯修复 | 1408×768 | **1** | 1408×768 | **无** | 零信息损失，但修复力度可能偏弱 |\n| 折中 | 704×384 | 2 | 2816×1536 | 2× | 2 倍放大，推荐 |\n| 保守 | 512×288 | 4 | 2048×1152 | 2.69× | 丢 86% 像素，画质容易不如原片 |\n\n**如果成品看起来不如原片，先把 `scale` 降到 1 或 2，把 `width/height` 提到接近源分辨率。**\n\n尺寸必须让 `width×scale` 和 `height×scale` 都是 128 的倍数，否则会裁边。\n\n### 其他\n- `clear_cache_after_n_frames`（补帧）和 `segment_latent_frames`（超分）都可调小省内存\n- 想单独控制释放时机：关掉 `unload_after`，改用「释放显存/内存」节点\n"
+      ],
+      "color": "#232",
+      "bgcolor": "#353",
+      "widgets_values_named": {
+        "text": "## 超分 + 补帧 一体化\n\n**流程**：源视频 → FlashVSR 超分（落盘）→ 读回 → GMFSS 补帧 → 保存\n\n### 为什么要落盘再读回\nFlashVSR 的输出是**视频文件**，不是内存里的张量。这样设计正是为了不爆内存——\n解码完一段就写盘，内存恒定。后续补帧需要 IMAGE 张量，所以用 `VHS_LoadVideoPath`\n把文件读回来。多一次无损读取，不影响画质。\n\n### 显存不会残留\n「流式落盘」节点的 `unload_after` 默认开启：写完视频立刻\n`unload_all_models()` + `soft_empty_cache()` + `gc.collect()`。\n所以补帧阶段从干净状态开始，不会和超分模型抢显存。\n\n### 关键参数\n- **保存节点 `frame_rate`**：必须填 **源帧率 × 补帧倍数**（源 24fps × 2 = 48）\n- **补帧 `multiplier`**：2 = 帧率翻倍\n\n---\n\n## ⚠️ 画质警告：width/height 不是输出尺寸\n\n`width/height` 是**送进模型前的低清尺寸**。节点会先把源片缩到这个尺寸，\n再双三次放大到目标，最后让模型修复。\n**缩得越狠，丢的真实信息越多，模型补的幻觉越多。**\n\n净放大倍数 = `4 × (LQ ÷ 源分辨率)`（LQ 就是 width/height）\n\n以源片 1376×768 为例：\n\n| 用途 | LQ | scale | 输出 | 降采样 | 评价 |\n|---|---|---|---|---|---|\n| 纯修复 | 1408×768 | **1** | 1408×768 | **无** | 零信息损失，但修复力度可能偏弱 |\n| 折中 | 704×384 | 2 | 2816×1536 | 2× | 2 倍放大，推荐 |\n| 保守 | 512×288 | 4 | 2048×1152 | 2.69× | 丢 86% 像素，画质容易不如原片 |\n\n**如果成品看起来不如原片，先把 `scale` 降到 1 或 2，把 `width/height` 提到接近源分辨率。**\n\n尺寸必须让 `width×scale` 和 `height×scale` 都是 128 的倍数，否则会裁边。\n\n### 其他\n- `clear_cache_after_n_frames`（补帧）和 `segment_latent_frames`（超分）都可调小省内存\n- 想单独控制释放时机：关掉 `unload_after`，改用「释放显存/内存」节点\n"
+      }
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      4,
+      1,
+      "IMAGE"
+    ],
+    [
+      2,
+      2,
+      0,
+      4,
+      0,
+      "FVSRN_MODEL"
+    ],
+    [
+      3,
+      3,
+      0,
+      5,
+      1,
+      "FVSRN_VAE"
+    ],
+    [
+      4,
+      4,
+      0,
+      5,
+      0,
+      "LATENT"
+    ],
+    [
+      5,
+      1,
+      2,
+      5,
+      2,
+      "AUDIO"
+    ],
+    [
+      6,
+      5,
+      0,
+      6,
+      0,
+      "STRING"
+    ],
+    [
+      7,
+      6,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      7,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      6,
+      2,
+      8,
+      1,
+      "AUDIO"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "① 超分阶段",
+      "bounding": [
+        -1240,
+        -220,
+        900,
+        1120
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "② 补帧阶段",
+      "bounding": [
+        -360,
+        -220,
+        1180,
+        700
+      ],
+      "color": "#8A8",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        1800,
+        400
+      ]
+    },
+    "frontendVersion": "1.57.1",
+    "VHS_latentpreview": false,
+    "VHS_MetadataImage": true
+  },
+  "version": 0.4,
+  "seed_widgets": {}
+}
