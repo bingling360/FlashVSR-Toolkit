@@ -1,0 +1,5 @@
+# 代码文件统一 LF（这些脚本要在 Linux 上跑）
+*.py   text eol=lf
+*.sh   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf

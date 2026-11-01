@@ -1,0 +1,198 @@
+# 原理分析与实测数据
+
+记录这次优化背后的技术判断，以及验证数据。
+
+---
+
+## 一、FlashVSR 的原理
+
+FlashVSR 是**流式（streaming）视频超分**，核心设计是「不一次看完整段视频」：
+
+1. **一步扩散**：蒸馏成 1 步去噪，不是 25 步迭代
+2. **局部约束稀疏注意力（LCSA）**：每个 latent 帧只和邻近窗口做注意力，不是全局
+3. **滑动 KV 缓存**：处理第 N 个窗口时复用前面算好的 K/V，保证帧间连贯
+4. **微型条件解码器（TCD）**：替代 Wan2.1 的大 VAE，解码快且省显存
+
+**模型本身是流式的，逐窗口推进，不需要整段视频进内存。**
+
+---
+
+## 二、那为什么内存会爆
+
+卡在 ComfyUI 的节点接口契约上：一个节点必须返回一个 `IMAGE` 张量，
+即 `[F,H,W,C]` 的 float32 完整数据。**流式模型被套进了非流式框架。**
+
+内存峰值来自三处：
+
+### 1. 采样器准备 LQ（最大头）
+
+`plus_sampler.py::prepare_lq_frames` 原始实现：
+
+```python
+frames.append(uint8 张量)                      # 1 份 uint8
+lq = torch.stack(frames, 0).float()...         # +1 份 uint8 + 1 份 float32
+return lq.to(torch.bfloat16)                   # +1 份 bf16
+```
+
+552 帧 @2048×1152 的峰值约 **27 GB**。
+
+### 2. 解码结果拼接
+
+```python
+outputs.append(out.to("cpu"))                  # 逐段累积
+video = torch.cat(outputs, dim=2).to(device)   # 拼一份 + 搬回显存
+frames = video.mul_(2.0).sub_(1.0)             # 再一份
+```
+
+### 3. 返回张量
+
+ComfyUI 必须把整段 `[F,H,W,C]` float32 传下去，本身又是 16.6 GB（552 帧）。
+
+---
+
+## 三、优化方案与依据
+
+### LQ 补丁：为什么改 bf16 是零损失
+
+模型本身跑在 bf16 上。原始代码最后一步也是 `.to(torch.bfloat16)`，
+float32 只是**中间态**。补丁做的事：
+
+```python
+# 原来：uint8 → float32(整段) → 归一化 → bf16
+# 现在：uint8 → float32(单帧) → 归一化 → 写入 bf16 缓冲
+```
+
+运算顺序等价，都是「float32 归一化后最后一次转 bf16」。
+实测 **PSNR = inf（逐像素完全一致）**。
+
+### 流式节点：为什么分段写盘不会改变画质
+
+两个前提：
+
+**1. 推理是连续的**。节点只改变「怎么保存」，不改变「怎么推理」。
+滑动 KV 缓存全程连续，所以**没有接缝**。
+
+**2. 色彩校正是逐帧独立运算**。看 `color_fix.py` 的实现：
+
+```python
+def _flatten_time(x):                      # (B,C,f,H,W) → (B*f,C,H,W)
+    return x.permute(0,2,1,3,4).reshape(B*f, C, H, W)
+
+def _wavelet_reconstruct(content, style):
+    c_high, _ = _wavelet_decompose(content)  # 当前帧高频
+    _, s_low  = _wavelet_decompose(style)    # 对应 LQ 帧低频
+    return c_high + s_low                    # 纯逐帧空间运算
+```
+
+没有跨帧统计量（没有全局均值、没有时序窗口），所以**逐段应用与整体应用结果一致**。
+
+---
+
+## 四、验证数据
+
+### LQ 补丁 A/B 测试
+
+同一条片段，补丁前后各跑一次，`crf=0` 无损编码：
+
+```
+补丁前  78.0s
+补丁后  72.0s
+PSNR    y:inf u:inf v:inf average:inf
+```
+
+### 流式节点 vs 标准路径
+
+45 帧 / 2048×1152，RGB 域全帧对比：
+
+| 配置 | PSNR | 文件大小 |
+|---|---|---|
+| `color_fix=False` | 47.42 dB | 18.2 MB vs 17.7 MB |
+| `color_fix=True` | **48.77 dB** | 14.9 MB vs 14.2 MB |
+
+残差来自两者 x264 码率分配不同，非算法差异。
+
+**耗时**（采样已缓存，只比后处理）：
+
+| | 耗时 |
+|---|---|
+| 标准路径 | 39.0s |
+| 流式节点 | **9.0s** |
+
+---
+
+## 五、踩过的坑（避免重复）
+
+### 坑 1：比对时必须清理旧输出
+
+测试脚本用「按前缀取最新文件」，但旧版本的输出没删，
+导致连续三轮都在比对残留文件——每次都得到完全相同的 25.604549 dB，
+却没警觉。**相同到小数点后六位的 PSNR 是危险信号。**
+
+### 坑 2：不要给 ffmpeg 加色彩标记
+
+编码 RGB 帧时加 `-colorspace bt709 -color_range tv` 会触发额外的范围转换：
+
+| 参数 | 往返 PSNR |
+|---|---|
+| 无标记 | **38.37 dB** |
+| `tv+bt709` | 26.09 dB |
+| `pc+bt709` | 22.85 dB |
+
+均值漂移 1.6 个色阶。不加标记时 ffmpeg 的默认行为就是对的。
+
+### 坑 3：imageio 的 crf 参数不生效
+
+```python
+imageio.get_writer(quality=None, ffmpeg_params=['-crf','0'])  # crf 被忽略
+```
+
+改用 `subprocess.Popen` 直接管道喂 ffmpeg，参数完全可控。
+
+### 坑 4：VAE 模块的设备
+
+自定义节点里必须显式 `module.to(device)`。ComfyUI 可能把它留在 CPU，
+而 latent 在 GPU 上，会报：
+
+```
+Input type (CUDABFloat16Type) and weight type (CPUBFloat16Type) should be the same
+```
+
+---
+
+## 六、尺寸规则
+
+`prepare_lq_frames` 的逻辑：
+
+```python
+sW, sH = w0 * scale, h0 * scale
+tW = max(128, (sW // 128) * 128)     # 向下取整到 128 倍数
+tH = max(128, (sH // 128) * 128)
+# 然后居中裁剪到 (tW, tH)
+```
+
+所以 **`width×scale` 和 `height×scale` 都必须是 128 的倍数**，否则会裁边。
+
+| 输入 LQ | scale | 输出 | 说明 |
+|---|---|---|---|
+| 512×288 | 4 | 2048×1152 | ✅ 真 16:9，无裁剪 |
+| 480×270 | 4 | 1920×1024 | ⚠️ 上下各裁 28px，比例变了 |
+| 640×360 | 4 | 2560×1440 | ✅ 更大，约慢 40% |
+| 384×216 | 4 | 1536×864 | ✅ 省内存 |
+
+**净放大倍数 = 4 × (LQ ÷ 原图)**。因为 scale 固定 4，想放大 1.5 倍就必须先把原图降到
+1/2.7，这会丢掉真实细节。这是 FlashVSR 的设计限制。
+
+---
+
+## 七、参数速查
+
+| 参数 | 默认 | 作用 | 调法 |
+|---|---|---|---|
+| `width`/`height` | 512/288 | **低清输入**尺寸，非输出 | 见尺寸规则 |
+| `scale` | 4 | 放大倍数 | 不建议改 |
+| `kv_ratio` | 3.5 | 滑动 KV 窗口长度 | 闪烁明显调到 5-7 |
+| `local_range` | 11 | 局部注意力范围 | 9 更锐利，11 更稳定 |
+| `sparse_ratio` | 2.0 | 稀疏保留比例 | 降到 1.0 可加速 20-30% |
+| `offload` | true | 采样后卸 DiT | 长视频建议开 |
+| `chunk_q` | 0 | 查询分块（128 倍数）| OOM 时设 128 |
+| `long_mode` | false | 长视频分段 | **本节点不支持** |

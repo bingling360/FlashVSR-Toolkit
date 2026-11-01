@@ -1,0 +1,25 @@
+# 编译产物与大文件不入库
+*.so
+*.pth
+*.ckpt
+*.safetensors
+*.mp4
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 测试输出
+output/
+results/
+*.log
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
