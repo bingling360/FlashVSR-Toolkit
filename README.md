@@ -1,4 +1,40 @@
-# FlashVSR 完整方案
+# FlashVSR Toolkit for ComfyUI
+
+Memory-optimized deployment of [FlashVSR / FlashVSR+](https://github.com/OpenImagingLab/FlashVSR)
+video super-resolution in ComfyUI.
+
+FlashVSR is a streaming model, but ComfyUI's node contract forces the entire
+`[F,H,W,C]` tensor into memory — so long videos always OOM. This toolkit fixes that.
+
+| | Before | After |
+|---|---|---|
+| Peak memory, 552 frames @ 2048×1152 | ~42 GB (OOM) | **~9 GB** |
+| Post-processing time, 45 frames | 39.0s | **9.0s** |
+
+Output is verified equivalent to the standard path: the LQ patch is **bit-identical
+(PSNR = inf)**, and the streaming node reaches **PSNR 48.8 dB** (visually indistinguishable).
+
+> ⚠️ **Not suitable for 2D animation / line art.** FlashVSR is a generative diffusion
+> model trained on real-world video. On crisp 2D line art it smooths edges and
+> hallucinates texture — measured PSNR 19.2 dB vs. the source, i.e. *worse* than not
+> upscaling. Use Real-ESRGAN (anime) or waifu2x for that content.
+
+**Contents**: streaming decode-to-disk node · bf16 LQ preparation patch ·
+Block-Sparse-Attention build guide · model download scripts · 5 ready-to-use workflows.
+
+```bash
+bash env/setup_env.sh /path/to/ComfyUI          # dependency check + known-issue fixes
+bash env/build_bsa.sh                           # required, ~70 min compile
+bash models/download_flashvsr.sh /path/to/ComfyUI
+bash nodes/install_nodes.sh /path/to/ComfyUI
+python patches/patch_lq_bf16.py /path/to/ComfyUI/custom_nodes/ComfyUI_FlashVSR
+```
+
+Then drop any JSON from `workflows/` into the ComfyUI canvas.
+
+---
+
+# FlashVSR 完整方案（中文）
 
 在 ComfyUI 上部署 **FlashVSR / FlashVSR+ 视频超分**，并解决长视频的内存爆炸问题。
 附带 SeedVR2、GMFSS 补帧的配套工作流。
